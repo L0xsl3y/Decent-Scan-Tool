@@ -1,0 +1,13 @@
+CONFIG_IDF_TARGET="esp32s3"
+
+# Flash / partitions (OTA-ready from day one)
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# Console on the native USB port (USB-Serial/JTAG)
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# App rollback, so a bad OTA image falls back to the previous one
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y

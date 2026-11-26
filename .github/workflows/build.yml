@@ -1,0 +1,141 @@
+name: Build
+
+# Every push/PR: build firmware, APK and flasher so mistakes show up early.
+# Every tag v*: also publish a GitHub Release and redeploy the flasher to Pages.
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - id: v
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev.${GITHUB_RUN_NUMBER}+${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+  firmware:
+    needs: version
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.4.1
+    env:
+      DST_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        shell: bash
+        working-directory: firmware
+        run: |
+          . "$IDF_PATH/export.sh"
+          idf.py set-target esp32s3
+          idf.py build
+          cd build
+          python -m esptool --chip esp32s3 merge_bin -o merged.bin @flash_args
+      - name: Collect binaries
+        shell: bash
+        run: |
+          mkdir -p out
+          b=firmware/build
+          cp $b/bootloader/bootloader.bin \
+             $b/partition_table/partition-table.bin \
+             $b/ota_data_initial.bin \
+             $b/decent_scan_tool.bin \
+             $b/flasher_args.json out/
+          cp $b/merged.bin "out/decent-scan-fw-${DST_VERSION}-merged.bin"
+          ls -l out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: out/
+          if-no-files-found: error
+
+  android:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build debug APK
+        working-directory: app
+        run: |
+          ./gradlew --no-daemon assembleDebug \
+            -PappVersionName="${{ needs.version.outputs.version }}" \
+            -PappVersionCode="${{ github.run_number }}"
+      - name: Verify signature
+        run: |
+          apk=app/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME"/build-tools/$(ls "$ANDROID_HOME"/build-tools | sort -V | tail -1)/apksigner verify --print-certs "$apk"
+          mkdir -p out
+          cp "$apk" "out/decent-scan-${{ needs.version.outputs.version }}-debug.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: out/
+          if-no-files-found: error
+
+  flasher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: flasher/package-lock.json
+      - working-directory: flasher
+        run: npm ci && npm run build
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [version, firmware, android, flasher]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - run: ls -l dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          body: |
+            **Install the app:** download `decent-scan-${{ needs.version.outputs.version }}-debug.apk` below on the tablet, open it, and allow installs from your browser if asked.
+
+            **Flash the firmware (first time, over USB):** open the web flasher in Chrome:
+            https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+
+            Files:
+            - `decent-scan-fw-…-merged.bin`: everything in one image, written at 0x0
+            - `bootloader.bin` (0x0), `partition-table.bin` (0x8000), `ota_data_initial.bin` (0xf000), `decent_scan_tool.bin` (0x20000): separate parts
+            - `flasher_args.json`: offsets and flash settings
+
+  pages:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: release
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml

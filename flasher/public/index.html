@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decent Scan Flasher</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1>Decent Scan Flasher</h1>
+  <p class="sub">Flash the ESP32-S3 scan tool from Chrome on Android over USB (WebUSB).</p>
+
+  <section class="card">
+    <h2>1. Firmware</h2>
+    <p id="fw-info">Loading firmware info…</p>
+    <label class="row"><input type="radio" name="src" value="release" checked> Latest release (hosted here)</label>
+    <label class="row"><input type="radio" name="src" value="file"> A merged <code>.bin</code> file from my tablet (written at 0x0)</label>
+    <input type="file" id="file" accept=".bin" hidden>
+  </section>
+
+  <section class="card">
+    <h2>2. Put the board in download mode</h2>
+    <ol>
+      <li>Plug the board's <b>USB</b> port (native USB, not "UART") into the tablet with an OTG cable or adapter.</li>
+      <li>Hold <b>BOOT</b>, tap <b>RESET</b> (RST/EN), then let go of <b>BOOT</b>.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>3. Connect and flash</h2>
+    <label class="row"><input type="checkbox" id="erase"> Erase the whole flash first (use for the very first flash or if something is broken; this wipes saved settings)</label>
+    <div class="buttons">
+      <button id="connect">Connect</button>
+      <button id="flash" disabled>Flash</button>
+      <button id="disconnect" disabled>Disconnect</button>
+    </div>
+    <progress id="progress" max="100" value="0"></progress>
+    <p id="status" class="status">Not connected.</p>
+  </section>
+
+  <section class="card">
+    <h2>4. Done</h2>
+    <p>When the flash finishes, tap <b>RESET</b> once. The board starts the new firmware. The stage-1 firmware blinks the RGB LED.</p>
+  </section>
+
+  <details class="card">
+    <summary>Log</summary>
+    <pre id="log"></pre>
+  </details>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+name: Deploy flasher to Pages
+
+# Builds /flasher and bundles the firmware from the latest GitHub Release,
+# then publishes it to GitHub Pages. Runs after each tagged release, or by hand.
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: flasher/package-lock.json
+      - name: Build flasher
+        working-directory: flasher
+        run: npm ci && npm run build
+      - name: Fetch latest firmware release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)
+          date=$(gh release view --repo "$GITHUB_REPOSITORY" --json publishedAt -q .publishedAt)
+          echo "Latest release: $tag"
+          mkdir -p flasher/dist/firmware
+          cd flasher/dist/firmware
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" \
+            -p bootloader.bin -p partition-table.bin -p ota_data_initial.bin \
+            -p decent_scan_tool.bin -p flasher_args.json -p '*-merged.bin'
+          python3 ../../tools/make_manifest.py flasher_args.json "$tag" "${date%%T*}" manifest.json
+          ls -l
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: flasher/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

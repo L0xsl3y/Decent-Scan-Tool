@@ -1,0 +1,16 @@
+{
+  "name": "decent-scan-flasher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Web flasher for the Decent Scan Tool ESP32-S3 firmware (esptool-js + WebUSB polyfill)",
+  "scripts": {
+    "build": "rm -rf dist && mkdir -p dist && cp public/* dist/ && esbuild src/main.js --bundle --format=esm --target=chrome100 --minify --outfile=dist/app.js"
+  },
+  "dependencies": {
+    "esptool-js": "0.7.1",
+    "web-serial-polyfill": "1.0.15"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

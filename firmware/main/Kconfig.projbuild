@@ -1,0 +1,32 @@
+menu "Decent Scan Tool"
+
+    choice DST_LED_TYPE
+        prompt "Status LED type"
+        default DST_LED_WS2812
+        help
+            Most ESP32-S3 DevKitC boards have one addressable RGB LED
+            (WS2812). Pick "plain GPIO" for a normal LED + resistor.
+        config DST_LED_WS2812
+            bool "Addressable RGB (WS2812)"
+        config DST_LED_GPIO
+            bool "Plain GPIO LED"
+    endchoice
+
+    config DST_LED_GPIO_NUM
+        int "Status LED GPIO"
+        range 0 48
+        default 48
+        help
+            ESP32-S3-DevKitC-1 v1.0: GPIO48. v1.1: GPIO38.
+
+    config DST_CAN_TX_GPIO
+        int "CAN TX GPIO (to SN65HVD230 CTX/D)"
+        range 0 48
+        default 5
+
+    config DST_CAN_RX_GPIO
+        int "CAN RX GPIO (from SN65HVD230 CRX/R)"
+        range 0 48
+        default 4
+
+endmenu
