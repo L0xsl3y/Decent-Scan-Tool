@@ -13,8 +13,10 @@ you download the results.
    **Add deployment branch or tag rule**, choose **Tag**, type `v*`, then save.
    (Releases are built from tags. Without this rule the Pages deploy is refused.)
 
-If a Pages deploy failed before you did this, open the **Actions** tab, choose
-**Deploy flasher to Pages**, and tap **Run workflow**.
+If a release's Pages deploy failed before you did this: open the **Actions**
+tab, open the **Build** run for that tag (e.g. `v0.1.0`), and tap
+**Re-run jobs → Re-run failed jobs**. (Once this code is merged into `main`,
+you can also use **Deploy flasher to Pages → Run workflow**.)
 
 ## Where builds come from
 
