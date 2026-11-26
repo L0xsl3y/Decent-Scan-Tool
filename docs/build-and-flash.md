@@ -8,20 +8,21 @@ you download the results.
 1. Open `https://github.com/l0xsl3y/Decent-Scan-Tool/settings/pages`
    (use "Desktop site" in Chrome's ⋮ menu if the page looks cramped).
 2. Under **Build and deployment → Source**, choose **GitHub Actions**.
-3. Open `https://github.com/l0xsl3y/Decent-Scan-Tool/settings/environments`,
-   tap **github-pages**. Under **Deployment branches and tags**, tap
-   **Add deployment branch or tag rule**, choose **Tag**, type `v*`, then save.
-   (Releases are built from tags. Without this rule the Pages deploy is refused.)
+3. Open `https://github.com/l0xsl3y/Decent-Scan-Tool/settings/environments`
+   and tap **github-pages**. Under **Deployment branches and tags**, choose
+   **No restriction** and save. (By default only `main` may deploy. Releases
+   are built from tags and work branches, so the deploy would be refused.)
 
 If a release's Pages deploy failed before you did this: open the **Actions**
-tab, open the **Build** run for that tag (e.g. `v0.1.0`), and tap
-**Re-run jobs → Re-run failed jobs**. (Once this code is merged into `main`,
-you can also use **Deploy flasher to Pages → Run workflow**.)
+tab, open that release's **Build** run, and tap
+**Re-run jobs → Re-run failed jobs**.
 
 ## Where builds come from
 
-- Every tag `vX.Y.Z` makes a **Release**:
-  `https://github.com/l0xsl3y/Decent-Scan-Tool/releases/latest`
+- Every tag `vX.Y.Z` makes a **Release**. You can also release without
+  making a tag yourself: **Actions → Build → Run workflow**, enter
+  `release_tag` (e.g. `v0.2.0`), and CI creates the tag.
+  Latest: `https://github.com/l0xsl3y/Decent-Scan-Tool/releases/latest`
   - `decent-scan-X.Y.Z-debug.apk`: the Android app
   - `decent-scan-fw-X.Y.Z-merged.bin`: the whole firmware in one file
   - `bootloader.bin`, `partition-table.bin`, `ota_data_initial.bin`,
